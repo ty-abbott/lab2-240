@@ -9,8 +9,9 @@ public class EvilHangman {
     public static void main(String[] args) throws IOException, EmptyDictionaryException {
         boolean playing;
         int currentGuesses = 0;
-        StringBuilder usedLetters = new StringBuilder();
-        String word="";
+        SortedSet<Character> guesses = new TreeSet<>();
+        Set<String> wordSet = new HashSet<>();
+        StringBuilder word = new StringBuilder();
         EvilHangmanGame game = new EvilHangmanGame();
 
         String fileName = args[0];
@@ -27,17 +28,27 @@ public class EvilHangman {
 
         while(playing) {
             int numGuessesLeft = totalGuesses - currentGuesses;
-            System.out.printf("You have %d guesses left %n Used leters %s%n Word: %s%n Enter guess: %n", numGuessesLeft,usedLetters, word);
+            System.out.printf("You have %d guesses left %n Used letters:", numGuessesLeft);
+            guesses = game.getGuessedLetters();
+            System.out.println(guesses);
+            System.out.printf("Current word: %s", word.toString());
             String input = in.nextLine();
             while (input.length() != 1 || !Character.isLetter(input.charAt(0))) {
                 System.out.print("That's not a letter. Please try again: ");
                 input = in.nextLine();
             }
-            while(word.contains(input)) {
-                System.out.print("The letter has already been guessed");
-                input = in.nextLine();
+            char letter = input.charAt(0);
+            while(true) {
+                try {
+                    wordSet = game.makeGuess(letter);
+
+                } catch (GuessAlreadyMadeException e) {
+                    System.out.println("You already guessed that letter, please try again");
+                    continue;
+                }
+                break;
             }
-            word = word + input;
+
 
             currentGuesses ++;
             if (currentGuesses == totalGuesses) {
