@@ -7,13 +7,14 @@ import java.io.File;
 public class EvilHangman {
 
     public static void main(String[] args) throws IOException, EmptyDictionaryException {
-        IEvilHangmanGame game;
+        EvilHangmanGame game;
         boolean playing = false;
         int currentGuesses = 0;
         int currWord = 0;
+        char letter;
         SortedSet<Character> guesses = new TreeSet<>();
         Set<String> wordSet = new HashSet<>();
-        StringBuilder word = new StringBuilder();
+        StringBuilder base = new StringBuilder();
         game = new EvilHangmanGame();
 
         String fileName = args[0];
@@ -31,30 +32,34 @@ public class EvilHangman {
         }catch (EmptyDictionaryException e) {
             System.exit(0);
         }
-
+        base = game.getBaseWord();
+        StringBuilder word = new StringBuilder(base.toString());
         while(playing) {
             int numGuessesLeft = totalGuesses - currentGuesses;
             System.out.printf("You have %d guesses left %n Used letters:", numGuessesLeft);
             guesses = game.getGuessedLetters();
             System.out.println(guesses);
             System.out.printf("Current word: %s%n", word.toString());
+            System.out.println("Enter Letter:");
             String input = in.nextLine();
-            while (input.length() != 1 || !Character.isLetter(input.charAt(0))) {
-                System.out.print("That's not a letter. Please try again: ");
+            boolean alreadyGuessed = false;
+            while (true) {
+                if(isLetter(input)) {
+                    letter = input.charAt(0);
+                    letter = Character.toLowerCase(letter);
+                    try {//TODO: update input here
+                        wordSet = game.makeGuess(letter);
+                        break;
+                    } catch (GuessAlreadyMadeException e) {
+                        System.out.println("You already guessed that letter, please try again");
+                    }
+                }
+                else{
+                    System.out.print("That's not a letter. Please try again: ");
+                }
                 input = in.nextLine();
             }
-            char letter = input.charAt(0);
-            letter = Character.toLowerCase(letter);
-            while(true) {
-                try {//TODO: update input here
-                    wordSet = game.makeGuess(letter);
 
-                } catch (GuessAlreadyMadeException e) {
-                    System.out.println("You already guessed that letter, please try again");
-                    continue;
-                }
-                break;
-            }
             boolean containsLetter = true;
             Iterator<String> wordIterator = wordSet.iterator();
             String findChar = wordIterator.next();
@@ -62,20 +67,26 @@ public class EvilHangman {
             List<Integer> charList = new ArrayList<>();
 
             if(containsLetter) {
-                System.out.printf("There was an %c", letter);
-                if (currWord == wordLength){
-                    System.out.printf("You win! The word was %s", findChar);
+                int letterIndex = findChar.indexOf(letter);
+                while(letterIndex >= 0) {
+                    charList.add(letterIndex);
+                    letterIndex = findChar.indexOf(letter, letterIndex+1);
                 }
-                else{
-                    int letterIndex = findChar.indexOf(letter);
-                    while(letterIndex >= 0) {
-                        charList.add(letterIndex);
-                        letterIndex = findChar.indexOf(letter, letterIndex+1);
-                    }
-                    for (int i = 0; i < charList.size(); i++) {
-                        word.setCharAt(charList.get(i),letter);
-                    }
-                    currWord++;
+                for (int i = 0; i < charList.size(); i++) {
+                    word.setCharAt(charList.get(i),letter);
+                }
+                System.out.printf("There was %d %c's %n",charList.size(), letter);
+//                int letterIndex = findChar.indexOf(letter);
+//                while(letterIndex >= 0) {
+//                    charList.add(letterIndex);
+//                    letterIndex = findChar.indexOf(letter, letterIndex+1);
+//                    }
+//                    for (int i = 0; i < charList.size(); i++) {
+//                        word.setCharAt(charList.get(i),letter);
+//                    }
+                if(word.indexOf("_") == -1) {
+                    System.out.printf("You win! The word was %s", word.toString());
+                    playing = false;
                 }
             }
             else {
@@ -84,18 +95,20 @@ public class EvilHangman {
             }
 
             if (currentGuesses == totalGuesses) {
+                Iterator<String> end = wordSet.iterator();
+                String finalWord = end.next();
+                System.out.printf("Sorry but you lost, just like get better at this game, ya know? The word was %s", finalWord);
                 playing = false;
             }
         }
 
-        Iterator<String> end = wordSet.iterator();
-        String finalWord = end.next();
-        System.out.printf("Sorry but you lost, just like get better at this game, ya know? The word was %s", finalWord);
-
     }
 
-    boolean isLetter(String input) {
-
+    static boolean isLetter(String input) {
+        if(input.length() != 1 || !Character.isLetter(input.charAt(0))) {
+            return false;
+        }
+        return true;
     }
 
 }
